@@ -61,7 +61,17 @@ apt-get dist-upgrade -y --no-install-recommends -o Dpkg::Options::="--force-conf
 if grep -E '^ID=' /etc/os-release | grep -q ubuntu; then
   UBUNTU_VERSION=$(grep '^VERSION_ID=' /etc/os-release | cut -d'"' -f2)
   if dpkg --compare-versions "$UBUNTU_VERSION" ge "26.04" 2>/dev/null; then
-    if [ "${INSTALL_GNU_COREUTILS:-0}" -eq 1 ]; then
+    case "${INSTALL_GNU_COREUTILS:-0}" in
+      0|1)
+        INSTALL_GNU_COREUTILS_NORMALIZED="${INSTALL_GNU_COREUTILS:-0}"
+        ;;
+      *)
+        echo "*** Invalid value for INSTALL_GNU_COREUTILS: '${INSTALL_GNU_COREUTILS}'" >&2
+        echo "*** Expected 0 or 1." >&2
+        exit 1
+        ;;
+    esac
+    if [ "$INSTALL_GNU_COREUTILS_NORMALIZED" = "1" ]; then
       echo "*** Installing GNU Coreutils and traditional sudo to replace Rust variants..."
       GNU_COREUTILS_INSTALLED=0
       TRADITIONAL_SUDO_INSTALLED=0
