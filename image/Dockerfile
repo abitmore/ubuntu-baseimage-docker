@@ -11,7 +11,7 @@ ARG INSTALL_GNU_COREUTILS=0
 
 COPY . /bd_build
 
-RUN /bd_build/prepare.sh && \
+RUN INSTALL_GNU_COREUTILS=$INSTALL_GNU_COREUTILS /bd_build/prepare.sh && \
 	/bd_build/system_services.sh && \
 	/bd_build/utilities.sh && \
 	/bd_build/cleanup.sh
