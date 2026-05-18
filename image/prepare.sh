@@ -55,6 +55,34 @@ $minimal_apt_get_install software-properties-common
 ## Upgrade all packages.
 apt-get dist-upgrade -y --no-install-recommends -o Dpkg::Options::="--force-confold"
 
+## Ubuntu 26.04+ ships uutils-coreutils (Rust) and sudo-rs (Rust) by default.
+## Optionally replace them with GNU Coreutils and traditional sudo when
+## INSTALL_GNU_COREUTILS=1 is set at build time.
+if grep -E '^ID=' /etc/os-release | grep -q ubuntu; then
+  UBUNTU_VERSION=$(grep '^VERSION_ID=' /etc/os-release | cut -d'"' -f2)
+  if dpkg --compare-versions "$UBUNTU_VERSION" ge "26.04" 2>/dev/null; then
+    if [ "${INSTALL_GNU_COREUTILS:-0}" -eq 1 ]; then
+      echo "*** Installing GNU Coreutils and traditional sudo to replace Rust variants..."
+      # Install GNU Coreutils if available (package name may vary by Ubuntu release).
+      # 'coreutils-gnu' is the expected package name for the GNU implementation
+      # when uutils-coreutils is the default.
+      if apt-cache show coreutils-gnu > /dev/null 2>&1; then
+        $minimal_apt_get_install coreutils-gnu
+      fi
+      # Install traditional sudo if available (package name may vary).
+      # 'sudo-traditional' or similar may be provided alongside 'sudo-rs'.
+      if apt-cache show sudo-traditional > /dev/null 2>&1; then
+        $minimal_apt_get_install sudo-traditional
+      elif apt-cache show sudo-classic > /dev/null 2>&1; then
+        $minimal_apt_get_install sudo-classic
+      fi
+    else
+      echo "*** Ubuntu 26.04 detected: using default uutils-coreutils (Rust) and sudo-rs (Rust)."
+      echo "*** Set INSTALL_GNU_COREUTILS=1 at build time to use GNU Coreutils and traditional sudo instead."
+    fi
+  fi
+fi
+
 ## Fix locale.
 case $(lsb_release -is) in
   Ubuntu)

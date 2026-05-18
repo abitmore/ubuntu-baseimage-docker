@@ -7,3 +7,8 @@ minimal_apt_get_install='apt-get install -y --no-install-recommends'
 export DISABLE_SYSLOG=${DISABLE_SYSLOG:-0}
 export DISABLE_SSH=${DISABLE_SSH:-0}
 export DISABLE_CRON=${DISABLE_CRON:-0}
+
+# Ubuntu 26.04+ ships uutils-coreutils (Rust) and sudo-rs (Rust) by default.
+# Set INSTALL_GNU_COREUTILS=1 to replace them with GNU Coreutils and
+# traditional sudo. Has no effect on Ubuntu releases prior to 26.04.
+export INSTALL_GNU_COREUTILS=${INSTALL_GNU_COREUTILS:-0}
