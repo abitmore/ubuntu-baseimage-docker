@@ -63,18 +63,33 @@ if grep -E '^ID=' /etc/os-release | grep -q ubuntu; then
   if dpkg --compare-versions "$UBUNTU_VERSION" ge "26.04" 2>/dev/null; then
     if [ "${INSTALL_GNU_COREUTILS:-0}" -eq 1 ]; then
       echo "*** Installing GNU Coreutils and traditional sudo to replace Rust variants..."
+      GNU_COREUTILS_INSTALLED=0
+      TRADITIONAL_SUDO_INSTALLED=0
       # Install GNU Coreutils if available (package name may vary by Ubuntu release).
       # 'coreutils-gnu' is the expected package name for the GNU implementation
       # when uutils-coreutils is the default.
       if apt-cache show coreutils-gnu > /dev/null 2>&1; then
         $minimal_apt_get_install coreutils-gnu
+        GNU_COREUTILS_INSTALLED=1
       fi
       # Install traditional sudo if available (package name may vary).
       # 'sudo-traditional' or similar may be provided alongside 'sudo-rs'.
       if apt-cache show sudo-traditional > /dev/null 2>&1; then
         $minimal_apt_get_install sudo-traditional
+        TRADITIONAL_SUDO_INSTALLED=1
       elif apt-cache show sudo-classic > /dev/null 2>&1; then
         $minimal_apt_get_install sudo-classic
+        TRADITIONAL_SUDO_INSTALLED=1
+      fi
+      if [ "$GNU_COREUTILS_INSTALLED" -ne 1 ] || [ "$TRADITIONAL_SUDO_INSTALLED" -ne 1 ]; then
+        echo "*** ERROR: INSTALL_GNU_COREUTILS=1 was requested, but the requested replacements could not be fully installed." >&2
+        if [ "$GNU_COREUTILS_INSTALLED" -ne 1 ]; then
+          echo "*** ERROR: No GNU coreutils replacement package was found (tried: coreutils-gnu)." >&2
+        fi
+        if [ "$TRADITIONAL_SUDO_INSTALLED" -ne 1 ]; then
+          echo "*** ERROR: No traditional sudo replacement package was found (tried: sudo-traditional, sudo-classic)." >&2
+        fi
+        exit 1
       fi
     else
       echo "*** Ubuntu 26.04 detected: using default uutils-coreutils (Rust) and sudo-rs (Rust)."
