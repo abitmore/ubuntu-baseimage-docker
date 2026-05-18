@@ -640,7 +640,7 @@ Then you can proceed with `make build` command.
 <a name="ubuntu_2604_rust"></a>
 ### Ubuntu 26.04 LTS: Rust Coreutils and sudo-rs
 
-Ubuntu 26.04 LTS "Resolute Ringtail" introduced two significant changes compared to earlier Ubuntu releases:
+Ubuntu 26.04 LTS introduced two significant changes compared to earlier Ubuntu releases:
 
 1. **Rust Coreutils (`uutils-coreutils`)** — Ubuntu 26.04 ships [uutils-coreutils](https://github.com/uutils/coreutils), a Rust-based reimplementation of the GNU Core Utilities (`ls`, `cp`, `mv`, `cat`, etc.), as the default `coreutils` package. This replaces the traditional [GNU Coreutils](https://www.gnu.org/software/coreutils/).
 
@@ -682,7 +682,7 @@ docker build --build-arg BASE_IMAGE=ubuntu:26.04 --build-arg INSTALL_GNU_COREUTI
 Alternatively, you can install GNU Coreutils in your own Dockerfile that derives from a 26.04-based baseimage:
 
 ```Dockerfile
-FROM phusion/baseimage:resolute-1.0.0
+FROM phusion/baseimage:<ubuntu-26.04-version>
 
 # Replace uutils-coreutils with GNU Coreutils and sudo-rs with traditional sudo.
 RUN apt-get update && \

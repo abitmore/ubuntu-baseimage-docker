@@ -91,6 +91,18 @@ if grep -E '^ID=' /etc/os-release | grep -q ubuntu; then
         fi
         exit 1
       fi
+      # Verify that GNU coreutils are now the active implementation on PATH.
+      # Some packages may install binaries under a non-default path and rely on
+      # update-alternatives; if so the replacement has not taken effect.
+      if ! ls --version 2>&1 | grep -qi 'gnu coreutils'; then
+        echo "*** ERROR: coreutils-gnu was installed but GNU coreutils are not active on PATH." >&2
+        echo "*** 'ls --version' does not report 'GNU coreutils'." >&2
+        echo "*** The package may place binaries outside the default PATH or require" >&2
+        echo "*** manual update-alternatives configuration. Check Ubuntu 26.04 packaging." >&2
+        exit 1
+      fi
+      LS_VER=$(ls --version | head -1)
+      echo "*** GNU Coreutils are active ($LS_VER)."
     else
       echo "*** Ubuntu 26.04 detected: using default uutils-coreutils (Rust) and sudo-rs (Rust)."
       echo "*** Set INSTALL_GNU_COREUTILS=1 at build time to use GNU Coreutils and traditional sudo instead."
