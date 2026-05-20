@@ -55,8 +55,8 @@ $minimal_apt_get_install software-properties-common
 ## Upgrade all packages.
 apt-get dist-upgrade -y --no-install-recommends -o Dpkg::Options::="--force-confold"
 
-## Ubuntu 26.04+ ships uutils-coreutils (Rust) and sudo-rs (Rust) by default.
-## Optionally replace them with GNU Coreutils and traditional sudo when
+## Ubuntu 26.04+ ships uutils-coreutils (Rust) by default.
+## Optionally replace them with GNU Coreutils when
 ## INSTALL_GNU_COREUTILS=1 is set at build time.
 if grep -E '^ID=' /etc/os-release | grep -q ubuntu; then
   UBUNTU_VERSION=$(grep '^VERSION_ID=' /etc/os-release | cut -d'"' -f2)
@@ -72,40 +72,14 @@ if grep -E '^ID=' /etc/os-release | grep -q ubuntu; then
         ;;
     esac
     if [ "$INSTALL_GNU_COREUTILS_NORMALIZED" = "1" ]; then
-      echo "*** Installing GNU Coreutils and traditional sudo to replace Rust variants..."
-      GNU_COREUTILS_INSTALLED=0
-      TRADITIONAL_SUDO_INSTALLED=0
-      # Install GNU Coreutils if available (package name may vary by Ubuntu release).
-      # 'coreutils-gnu' is the expected package name for the GNU implementation
-      # when uutils-coreutils is the default.
-      if apt-cache show coreutils-gnu > /dev/null 2>&1; then
-        $minimal_apt_get_install coreutils-gnu
-        GNU_COREUTILS_INSTALLED=1
-      fi
-      # Install traditional sudo if available (package name may vary).
-      # 'sudo-traditional' or similar may be provided alongside 'sudo-rs'.
-      if apt-cache show sudo-traditional > /dev/null 2>&1; then
-        $minimal_apt_get_install sudo-traditional
-        TRADITIONAL_SUDO_INSTALLED=1
-      elif apt-cache show sudo-classic > /dev/null 2>&1; then
-        $minimal_apt_get_install sudo-classic
-        TRADITIONAL_SUDO_INSTALLED=1
-      fi
-      if [ "$GNU_COREUTILS_INSTALLED" -ne 1 ] || [ "$TRADITIONAL_SUDO_INSTALLED" -ne 1 ]; then
-        echo "*** ERROR: INSTALL_GNU_COREUTILS=1 was requested, but the requested replacements could not be fully installed." >&2
-        if [ "$GNU_COREUTILS_INSTALLED" -ne 1 ]; then
-          echo "*** ERROR: No GNU coreutils replacement package was found (tried: coreutils-gnu)." >&2
-        fi
-        if [ "$TRADITIONAL_SUDO_INSTALLED" -ne 1 ]; then
-          echo "*** ERROR: No traditional sudo replacement package was found (tried: sudo-traditional, sudo-classic)." >&2
-        fi
-        exit 1
-      fi
+      echo "*** Removing Rust to restore GNU Coreutils..."
+      # GNU Coreutils can only be installed by removing `coreutils-from-uutils`
+      apt-get remove -y --allow-remove-essential coreutils-from-uutils
       # Verify that GNU coreutils are now the active implementation on PATH.
       # Some packages may install binaries under a non-default path and rely on
       # update-alternatives; if so the replacement has not taken effect.
       if ! ls --version 2>&1 | grep -qi 'gnu coreutils'; then
-        echo "*** ERROR: coreutils-gnu was installed but GNU coreutils are not active on PATH." >&2
+        echo "*** ERROR: coreutils-from-gnu was installed but GNU coreutils are not active on PATH." >&2
         echo "*** 'ls --version' does not report 'GNU coreutils'." >&2
         echo "*** The package may place binaries outside the default PATH or require" >&2
         echo "*** manual update-alternatives configuration. Check Ubuntu 26.04 packaging." >&2
@@ -114,8 +88,8 @@ if grep -E '^ID=' /etc/os-release | grep -q ubuntu; then
       LS_VER=$(ls --version | head -1)
       echo "*** GNU Coreutils are active ($LS_VER)."
     else
-      echo "*** Ubuntu 26.04 detected: using default uutils-coreutils (Rust) and sudo-rs (Rust)."
-      echo "*** Set INSTALL_GNU_COREUTILS=1 at build time to use GNU Coreutils and traditional sudo instead."
+      echo "*** Ubuntu 26.04 detected: using default uutils-coreutils (Rust)."
+      echo "*** Set INSTALL_GNU_COREUTILS=1 at build time to use GNU Coreutils instead."
     fi
   fi
 fi

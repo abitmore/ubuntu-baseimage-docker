@@ -4,9 +4,9 @@ FROM $BASE_IMAGE
 ARG QEMU_ARCH
 #ADD x86_64_qemu-${QEMU_ARCH}-static.tar.gz /usr/bin
 
-# Ubuntu 26.04+ ships uutils-coreutils (Rust) and sudo-rs (Rust) by default.
-# Set INSTALL_GNU_COREUTILS=1 to replace them with GNU Coreutils and
-# traditional sudo. Has no effect on Ubuntu releases prior to 26.04.
+# Ubuntu 26.04+ ships uutils-coreutils (Rust) by default.
+# Set INSTALL_GNU_COREUTILS=1 to replace them with GNU Coreutils.
+# Has no effect on Ubuntu releases prior to 26.04.
 ARG INSTALL_GNU_COREUTILS=0
 
 COPY . /bd_build
