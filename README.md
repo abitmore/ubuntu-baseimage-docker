@@ -679,18 +679,26 @@ When building baseimage-docker from source, you can set `INSTALL_GNU_COREUTILS=1
 docker build --build-arg BASE_IMAGE=ubuntu:26.04 --build-arg INSTALL_GNU_COREUTILS=1 image/
 ```
 
-Alternatively, you can install GNU Coreutils in your own Dockerfile that derives from a 26.04-based baseimage:
+Alternatively, you can install GNU Coreutils in your own Dockerfile that derives from a 26.04-based baseimage. Because Ubuntu 26.04 packaging is not yet finalised, first discover the correct package names:
+
+```bash
+# Discover available GNU coreutils and traditional sudo packages on Ubuntu 26.04:
+docker run --rm ubuntu:26.04 sh -c \
+  'apt-get update -qq && apt-cache search coreutils && apt-cache search sudo | grep -i traditional'
+```
+
+Once you have confirmed the actual package names, install them in your Dockerfile:
 
 ```Dockerfile
 FROM phusion/baseimage:<ubuntu-26.04-version>
 
 # Replace uutils-coreutils with GNU Coreutils and sudo-rs with traditional sudo.
+# Substitute <gnu-coreutils-pkg> and <traditional-sudo-pkg> with the actual
+# package names found via 'apt-cache search' on Ubuntu 26.04 above.
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends coreutils-gnu sudo-traditional && \
+    apt-get install -y --no-install-recommends <gnu-coreutils-pkg> <traditional-sudo-pkg> && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 ```
-
-> **Note:** The exact replacement package names (`coreutils-gnu`, `sudo-traditional`) may vary. Run `apt-cache search coreutils` and `apt-cache search sudo` inside an Ubuntu 26.04 container to discover the available alternatives.
 
 <a name="conclusion"></a>
 ## Conclusion
