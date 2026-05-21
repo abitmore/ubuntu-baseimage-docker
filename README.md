@@ -72,7 +72,7 @@ You can configure the stock `ubuntu` image yourself from your Dockerfile, so why
      * [The `docker-ssh` tool](#docker_ssh)
  * [Building the image yourself](#building)
    * [Removing optional services](#removing_optional_services)
-   * [Ubuntu 26.04 LTS: Rust Coreutils and sudo-rs](#ubuntu_2604_rust)
+   * [Ubuntu 26.04 LTS: Rust Coreutils](#ubuntu_2604_rust)
  * [Conclusion](#conclusion)
 
 -----------------------------------------
@@ -87,7 +87,7 @@ You can configure the stock `ubuntu` image yourself from your Dockerfile, so why
 
 | Component        | Why is it included? / Remarks |
 | ---------------- | ------------------- |
-| Ubuntu 26.04 LTS (Resolute) or 24.04 LTS (Noble) | The base system. Ubuntu 26.04 "Resolute" is the latest LTS; 24.04 "Noble" and 22.04 "Jammy" tracks are also maintained. **Note:** Ubuntu 26.04 ships [Rust Coreutils (uutils-coreutils)](#ubuntu_2604_rust) instead of GNU Coreutils, and [sudo-rs](#ubuntu_2604_rust) instead of traditional sudo. See the [dedicated section](#ubuntu_2604_rust) for details and alternatives. |
+| Ubuntu 26.04 LTS (Resolute) or 24.04 LTS (Noble) | The base system. Ubuntu 26.04 "Resolute" is the latest LTS; 24.04 "Noble" and 22.04 "Jammy" tracks are also maintained. **Note:** Ubuntu 26.04 ships [Rust Coreutils (uutils coreutils)](#ubuntu_2604_rust) instead of GNU Coreutils. See the [dedicated section](#ubuntu_2604_rust) for details and alternatives. |
 | A **correct** init process | _Main article: [Docker and the PID 1 zombie reaping problem](http://blog.phusion.nl/2015/01/20/docker-and-the-pid-1-zombie-reaping-problem/)._ <br><br>According to the Unix process model, [the init process](https://en.wikipedia.org/wiki/Init) -- PID 1 -- inherits all [orphaned child processes](https://en.wikipedia.org/wiki/Orphan_process) and must [reap them](https://en.wikipedia.org/wiki/Wait_(system_call)). Most Docker containers do not have an init process that does this correctly. As a result, their containers become filled with [zombie processes](https://en.wikipedia.org/wiki/Zombie_process) over time. <br><br>Furthermore, `docker stop` sends SIGTERM to the init process, which stops all services. Unfortunately most init systems don't do this correctly within Docker since they're built for hardware shutdowns instead. This causes processes to be hard killed with SIGKILL, which doesn't give them a chance to correctly deinitialize things. This can cause file corruption. <br><br>Baseimage-docker comes with an init process `/sbin/my_init` that performs both of these tasks correctly. |
 | Fixes APT incompatibilities with Docker | See https://github.com/dotcloud/docker/issues/1024. |
 | syslog-ng | A syslog daemon is necessary so that many services - including the kernel itself - can correctly log to /var/log/syslog. If no syslog daemon is running, a lot of important messages are silently swallowed. <br><br>Only listens locally. All syslog messages are forwarded to "docker logs".<br><br>Why syslog-ng?<br>I've had bad experience with rsyslog. I regularly run into bugs with rsyslog, and once in a while it takes my log host down by entering a 100% CPU loop in which it can't do anything. Syslog-ng seems to be much more stable. |
@@ -638,28 +638,28 @@ You can also set them directly as shown in the following example, to prevent `ss
 Then you can proceed with `make build` command.
 
 <a name="ubuntu_2604_rust"></a>
-### Ubuntu 26.04 LTS: Rust Coreutils and sudo-rs
+### Ubuntu 26.04 LTS: Rust Coreutils
 
 Ubuntu 26.04 LTS introduced two significant changes compared to earlier Ubuntu releases:
 
-1. **Rust Coreutils (`uutils-coreutils`)** — Ubuntu 26.04 ships [uutils-coreutils](https://github.com/uutils/coreutils), a Rust-based reimplementation of the GNU Core Utilities (`ls`, `cp`, `mv`, `cat`, etc.), as the default `coreutils` package. This replaces the traditional [GNU Coreutils](https://www.gnu.org/software/coreutils/).
+1. **Rust Coreutils (`uutils coreutils`)** — Ubuntu 26.04 ships [uutils coreutils](https://github.com/uutils/coreutils), a Rust-based reimplementation of the GNU Core Utilities (`ls`, `cp`, `mv`, `cat`, etc.), as the default `coreutils` package. This replaces the traditional [GNU Coreutils](https://www.gnu.org/software/coreutils/).
 
-2. **sudo-rs** — Ubuntu 26.04 ships [sudo-rs](https://github.com/trifectatechfoundation/sudo-rs), a memory-safe Rust reimplementation of `sudo`, as the default `sudo` provider.
+2. **sudo-rs** — Ubuntu 26.04 ships [sudo-rs](https://github.com/trifectatechfoundation/sudo-rs), a memory-safe Rust reimplementation of `sudo`, as the default `sudo` provider. (This is absent in official Docker image)
 
 #### Why this matters
 
 | Concern | Details |
 |---------|---------|
-| **Compatibility** | `uutils-coreutils` aims for GNU Coreutils compatibility but may have subtle behavioral differences that can break scripts relying on specific GNU flags or output formats. Test your Dockerfiles and scripts carefully when upgrading to the 26.04 base image. |
+| **Compatibility** | `uutils coreutils` aims for GNU Coreutils compatibility but may have subtle behavioral differences that can break scripts relying on specific GNU flags or output formats. Test your Dockerfiles and scripts carefully when upgrading to the 26.04 base image. |
 | **Security** | Rust's memory-safety guarantees eliminate whole classes of memory-related vulnerabilities (buffer overflows, use-after-free, etc.). This is generally considered an improvement for security. However, the Rust implementations are newer and have had less real-world exposure than their GNU counterparts. |
-| **Licensing** | Both `uutils-coreutils` and `sudo-rs` are licensed under the **MIT license**, whereas GNU Coreutils is **GPL-3.0** and traditional `sudo` is **ISC/BSD**. Users or organizations with specific license requirements should review these changes. |
-| **Maturity** | `uutils-coreutils` and `sudo-rs` are newer projects. Some edge cases, rarely-used options, or locale-sensitive behavior may differ from the GNU originals. |
+| **Licensing** | Both `uutils coreutils` is licensed under the **MIT license**, whereas GNU Coreutils is **GPL-3.0**. Users or organizations with specific license requirements should review these changes. |
+| **Maturity** | `uutils coreutils` is a newer project. Some edge cases, rarely-used options, or locale-sensitive behavior may differ from the GNU originals. |
 
 #### Alternatives
 
 **Option 1: Use the Ubuntu 24.04 LTS base image (recommended if you need GNU tooling)**
 
-The 24.04 "Noble Numbat" track is fully supported and ships GNU Coreutils and traditional `sudo`:
+The 24.04 "Noble Numbat" track is fully supported and ships GNU Coreutils:
 
 ```Dockerfile
 FROM phusion/baseimage:noble-1.0.2
@@ -673,30 +673,20 @@ make build BASE_IMAGE=ubuntu:24.04
 
 **Option 2: Replace Rust Coreutils with GNU Coreutils on Ubuntu 26.04**
 
-When building baseimage-docker from source, you can set `INSTALL_GNU_COREUTILS=1` to replace `uutils-coreutils` with GNU Coreutils and `sudo-rs` with traditional `sudo`:
+When building baseimage-docker from source, you can set `INSTALL_GNU_COREUTILS=1` to replace `uutils coreutils` with GNU Coreutils:
 
 ```bash
 docker build --build-arg BASE_IMAGE=ubuntu:26.04 --build-arg INSTALL_GNU_COREUTILS=1 image/
 ```
 
-Alternatively, you can install GNU Coreutils in your own Dockerfile that derives from a 26.04-based baseimage. Because Ubuntu 26.04 packaging is not yet finalised, first discover the correct package names:
-
-```bash
-# Discover available GNU coreutils and traditional sudo packages on Ubuntu 26.04:
-docker run --rm ubuntu:26.04 sh -c \
-  'apt-get update -qq && apt-cache search coreutils && apt-cache search sudo | grep -i traditional'
-```
-
-Once you have confirmed the actual package names, install them in your Dockerfile:
+Alternatively, you can install GNU Coreutils in your own Dockerfile that derives from a 26.04-based baseimage by removing `uutils coreutils`:
 
 ```Dockerfile
 FROM phusion/baseimage:<ubuntu-26.04-version>
 
-# Replace uutils-coreutils with GNU Coreutils and sudo-rs with traditional sudo.
-# Substitute <gnu-coreutils-pkg> and <traditional-sudo-pkg> with the actual
-# package names found via 'apt-cache search' on Ubuntu 26.04 above.
+# Replace uutils coreutils with GNU Coreutils.
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends <gnu-coreutils-pkg> <traditional-sudo-pkg> && \
+    apt-get remove -y --allow-remove-essential coreutils-from-uutils && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 ```
 
