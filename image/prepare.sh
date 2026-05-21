@@ -55,6 +55,45 @@ $minimal_apt_get_install software-properties-common
 ## Upgrade all packages.
 apt-get dist-upgrade -y --no-install-recommends -o Dpkg::Options::="--force-confold"
 
+## Ubuntu 26.04+ ships uutils-coreutils (Rust) by default.
+## Optionally replace them with GNU Coreutils when
+## INSTALL_GNU_COREUTILS=1 is set at build time.
+if grep -E '^ID=' /etc/os-release | grep -q ubuntu; then
+  UBUNTU_VERSION=$(grep '^VERSION_ID=' /etc/os-release | cut -d'"' -f2)
+  if dpkg --compare-versions "$UBUNTU_VERSION" ge "26.04" 2>/dev/null; then
+    case "${INSTALL_GNU_COREUTILS:-0}" in
+      0|1)
+        INSTALL_GNU_COREUTILS_NORMALIZED="${INSTALL_GNU_COREUTILS:-0}"
+        ;;
+      *)
+        echo "*** Invalid value for INSTALL_GNU_COREUTILS: '${INSTALL_GNU_COREUTILS}'" >&2
+        echo "*** Expected 0 or 1." >&2
+        exit 1
+        ;;
+    esac
+    if [ "$INSTALL_GNU_COREUTILS_NORMALIZED" = "1" ]; then
+      echo "*** Removing Rust to restore GNU Coreutils..."
+      # GNU Coreutils can only be installed by removing `coreutils-from-uutils`
+      apt-get remove -y --allow-remove-essential coreutils-from-uutils
+      # Verify that GNU coreutils are now the active implementation on PATH.
+      # Some packages may install binaries under a non-default path and rely on
+      # update-alternatives; if so the replacement has not taken effect.
+      if ! ls --version 2>&1 | grep -qi 'gnu coreutils'; then
+        echo "*** ERROR: coreutils-from-gnu was installed but GNU coreutils are not active on PATH." >&2
+        echo "*** 'ls --version' does not report 'GNU coreutils'." >&2
+        echo "*** The package may place binaries outside the default PATH or require" >&2
+        echo "*** manual update-alternatives configuration. Check Ubuntu 26.04 packaging." >&2
+        exit 1
+      fi
+      LS_VER=$(ls --version | head -1)
+      echo "*** GNU Coreutils are active ($LS_VER)."
+    else
+      echo "*** Ubuntu 26.04 detected: using default uutils-coreutils (Rust)."
+      echo "*** Set INSTALL_GNU_COREUTILS=1 at build time to use GNU Coreutils instead."
+    fi
+  fi
+fi
+
 ## Fix locale.
 case $(lsb_release -is) in
   Ubuntu)
