@@ -652,7 +652,7 @@ Ubuntu 26.04 LTS introduced two significant changes compared to earlier Ubuntu r
 |---------|---------|
 | **Compatibility** | `uutils coreutils` aims for GNU Coreutils compatibility but may have subtle behavioral differences that can break scripts relying on specific GNU flags or output formats. Test your Dockerfiles and scripts carefully when upgrading to the 26.04 base image. |
 | **Security** | Rust's memory-safety guarantees eliminate whole classes of memory-related vulnerabilities (buffer overflows, use-after-free, etc.). This is generally considered an improvement for security. However, the Rust implementations are newer and have had less real-world exposure than their GNU counterparts. |
-| **Licensing** | Both `uutils coreutils` and GNU Coreutils are licensed under different terms: `uutils coreutils` uses the **MIT license**, whereas GNU Coreutils is **GPL-3.0**. Users or organizations with specific license requirements should review these changes. |
+| **Licensing** | `uutils coreutils` and GNU Coreutils are licensed under different terms: `uutils coreutils` uses the **MIT license**, whereas GNU Coreutils is **GPL-3.0**. Users or organizations with specific license requirements should review these changes. |
 | **Maturity** | `uutils coreutils` is a newer project. Some edge cases, rarely-used options, or locale-sensitive behavior may differ from the GNU originals. |
 
 #### Alternatives
